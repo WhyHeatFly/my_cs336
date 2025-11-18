@@ -1,0 +1,8 @@
+# ignore _snapshots
+assignment1/assignment1-basics-main/tests/_snapshots/
+
+# ignore tests/fixtures 
+assignment1/assignment1-basics-main/tests/fixtures/
+
+# ignore data 
+assignment1/data/
