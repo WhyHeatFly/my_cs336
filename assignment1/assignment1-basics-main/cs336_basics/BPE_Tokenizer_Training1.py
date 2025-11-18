@@ -217,6 +217,8 @@ def run_train_bpe(
      merges = []
      vocab_process = len(vocab)
      total_merge = vocab_size - vocab_process
+     
+     print("Hello git")
 
      return 1, 2
 
