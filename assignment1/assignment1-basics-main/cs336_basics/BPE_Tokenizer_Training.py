@@ -64,7 +64,7 @@ def parallel_pre_tokenize(
         initargs=(bytes_to_unicode_map,)  # init_worker的参数列表
     ) as pool:
         results = list(tqdm(
-            pool.imap(pre_tokenize_worker, documents, chunksize=50),  # pool.imp() 并行处理documents里的str，对documents里的每个doc并行执行pre_tokenize_worker(doc)
+            pool.imap(pre_tokenize_worker, documents, chunksize=500),  # pool.imp() 并行处理documents里的str，对documents里的每个doc并行执行pre_tokenize_worker(doc)
             desc="预分词",  # tqdm的参数 进度条左侧显示的描述文字
             mininterval=1  # 进度条最少每秒刷新一次
         ))
@@ -92,7 +92,7 @@ def load_and_sample_data(
                 while start < len(mm):
                     end = mm.find(special_token.encode('utf-8'), start)
                     if end == -1:
-                        doc = mm[start:].decode('utf-8', errors='repalce').strip()
+                        doc = mm[start:].decode('utf-8', errors='replace').strip()
                         if doc:
                             documents.append(doc)
                         break
@@ -117,7 +117,7 @@ def gpt2_bytes_to_unicode_local():
     """
     bs = (
         list(range(ord("!"), ord("~") + 1))
-        + list(range(ord("i"), ord("¬") + 1 ))
+        + list(range(ord("¡"), ord("¬") + 1 ))
         + list(range(ord("®"), ord("ÿ") + 1))
     )  # 安全可见的unicode字符
 
@@ -273,7 +273,7 @@ class BPEIndex:
         """添加新位置到索引"""
         self.pair_positions[pair].append((seq_idx, pos))
 
-def run_train_bpe(
+def run_my_train_bpe(
         input_path: Union[str, os.PathLike],
         vocab_size: int,
         special_tokens: List[str] = ["<|endoftext|>"],
@@ -315,7 +315,7 @@ def run_train_bpe(
          
          sp_token_bytes = sp_token.encode("utf-8")
          
-         if sp_token_bytes not in existing_bytes and len(vocab):
+         if sp_token_bytes not in existing_bytes and len(vocab) < vocab_size:
              vocab[next_token_id] = sp_token_bytes
              existing_bytes.add(sp_token_bytes)
              next_token_id += 1
@@ -398,16 +398,16 @@ def evaluate_tokenizer(vocab: Dict[int, bytes], merges: List[Tuple[bytes, bytes]
 if __name__ == "__main__":
     # 配置参数
     config = {
-        "vocab_size": 1000,
+        "vocab_size": 500,
         "special_tokens": ["<|endoftext|>", "<|pad|>", "<|unk|>"],
         "num_processes": 8,  # 多进程的进程数
         "sample_size": 2000,  # 采样测试的数量
     }
 
     # 训练集的路径
-    train_path = "..\..\data\TinyStoriesV2-GPT4-train.txt"
+    train_path = r"..\..\data\TinyStoriesV2-GPT4-train.txt"
     # 验证集的路径
-    valid_path = "..\..\data\TinyStoriesV2-GPT4-valid.txt"
+    valid_path = r"..\..\data\TinyStoriesV2-GPT4-valid.txt"
     
     """
     from pathlib import Path
@@ -426,7 +426,7 @@ if __name__ == "__main__":
     print("🚀 开始训练")
     start_time = time.time()
 
-    train_vocab, train_merges = run_train_bpe(train_path, **config)
+    train_vocab, train_merges = run_my_train_bpe(train_path, **config)
     print(f"\n✅ 训练完成! 耗时: {time.time() - start_time:.2f}秒")
 
     # 小规模验证（使用验证集的10%）
@@ -434,9 +434,9 @@ if __name__ == "__main__":
     valid_config = config.copy()
     valid_config['sample_size'] = int(20) 
 
-    valid_vocab, valid_merges = run_train_bpe(valid_path, **valid_config)
-    print(valid_vocab)
-    print(valid_merges)
+    valid_vocab, valid_merges = run_my_train_bpe(valid_path, **valid_config)
+    # print(valid_vocab)
+    # print(valid_merges)
     # 分析结果
     print("\n 训练结果")
     print(f"训练词汇表大小: {len(train_vocab):,}")
@@ -483,3 +483,8 @@ if __name__ == "__main__":
     print(f"✅ 词汇表已保存至: {vocab_path}")
     print(f"✅ 合并列表已保存至: {merges_path}")
 
+    # 内存分析
+    import psutil  # 系统库, 用来获取CPU信息、内存使用情况、磁盘IO、进程状态、网络流量等系统级监控信息
+    process = psutil.Process()  # 获取当前Python进程对象
+    mem_usage = process.memory_info().rss / (1024 ** 3)  # GB memory_info()返回一个对象,包含当前进程的各种内存数据 rss 实际占用的物理内存
+    print(f"峰值内存使用：{mem_usage:.2f} GB")
