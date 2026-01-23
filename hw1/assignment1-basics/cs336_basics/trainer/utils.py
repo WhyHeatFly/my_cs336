@@ -2,7 +2,8 @@ import torch
 from torch import Tensor
 from jaxtyping import Float, Int
 import math
-    
+from collections.abc import Iterable
+
 def cross_entropy(out_logits: Float[Tensor, "batch_size vocab_size"], targets: Int[Tensor, "batch_size"]) -> Float[Tensor, ""]:
     """
     cross_entropy 的 Docstring: 计算交叉熵
@@ -37,3 +38,16 @@ def learning_rate_schedule(
         return min_learning_rate + 0.5 * (1 + math.cos((iter - warmup_iters) * math.pi / (cosine_cycle_iters - warmup_iters))) * (max_learning_rate - min_learning_rate)
     else:
         return min_learning_rate
+
+def gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float):
+    # l2范数就是把所有参数的梯度当成一个长向量以后，做“平方和再开根号”
+    eps = 1e-6
+    # 参数p不是单个标量元素，而是一个参数张量（torch.nn.Parameter），通常形状是向量/矩阵/更高维张量。
+    grads = [p.grad for p in parameters if p.grad is not None]
+    L2_norm = 0.0
+    for grad in grads:
+        L2_norm += grad.detach().pow(2).sum()
+    L2_norm = torch.sqrt(L2_norm)
+    if L2_norm >= max_l2_norm:
+        for grad in grads:
+            grad.data *= max_l2_norm/(L2_norm + eps)
