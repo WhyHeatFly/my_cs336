@@ -105,8 +105,8 @@ class SwiGLU(nn.Module):
         """GLU(x, W1, W2) = sigmoid(W1 x) * (W2 x)"""
         """SwiGLU(x, W1, W2, W3) = W2(SiLU(W1 x) * (W3 x))"""
         a = einsum(self.w1_weights, x, "d_ff d_model, ... d_model -> ... d_ff")
-        step1 = a * torch.sigmoid(a)
-        step2 = step1 * einsum(self.w3_weights, x, "d_ff d_model, ... d_model -> ... d_ff")
+        gate = a * torch.sigmoid(a)  # 门控单元 (0~1) 控制输出
+        step2 = gate * einsum(self.w3_weights, x, "d_ff d_model, ... d_model -> ... d_ff")
         return einsum(self.w2_weights, step2, "d_model d_ff, ... d_ff -> ... d_model")
 
     def _init_weights(self):
