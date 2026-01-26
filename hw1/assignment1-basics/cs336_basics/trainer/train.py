@@ -144,6 +144,9 @@ def main():
     train_data = get_dataset_memmap(train_data_path)
     valid_data = get_dataset_memmap(valid_data_path)
 
+    train_tokens_cpu = torch.from_numpy(train_data).to(dtype=torch.long).pin_memory()
+    valid_tokens_cpu = torch.from_numpy(valid_data).to(dtype=torch.long).pin_memory()
+
     print(f"Train data size: {len(train_data)} tokens")
     print(f"Val data size: {len(valid_data)} tokens")
 
@@ -180,7 +183,7 @@ def main():
 
         # Sample batch
         input_ids, target_ids = utils.data_loading(
-            dataset=train_data,
+            dataset=train_tokens_cpu,
             batch_size=args.batch_size,
             context_length=args.context_length,
             device=device
@@ -240,7 +243,7 @@ def main():
             with torch.no_grad():
                 for _ in range(args.val_batches):
                     val_input_ids, val_targets_ids = utils.data_loading(
-                        valid_data,
+                        valid_tokens_cpu,
                         args.batch_size,
                         args.context_length,
                         device

@@ -55,7 +55,7 @@ def gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: flo
         for grad in grads:
             grad.data *= max_l2_norm/(L2_norm + eps)
 
-def data_loading(dataset: npt.NDArray, batch_size: int, context_length: int, device: str) -> tuple[Tensor, Tensor]:
+def data_loading(tokens_cpu: torch.Tensor, batch_size: int, context_length: int, device: str) -> tuple[Tensor, Tensor]:
     """
     Given a dataset (a 1D numpy array of integers) and a desired batch size and
     context length, sample language modeling input sequences and their corresponding
@@ -74,16 +74,21 @@ def data_loading(dataset: npt.NDArray, batch_size: int, context_length: int, dev
         language modeling labels.
     """
 
-    N = len(dataset)
-    starts = torch.randint(0, N - context_length, (batch_size,), device=device)
-    # 每条序列的位置偏移索引：
-    offsets = torch.arange(context_length, device=device)
-    idx = starts[:, None] + offsets[None, :]  # (B, m)
-    idx_t = idx + 1
-    data = torch.as_tensor(dataset, dtype=torch.long).to(device=device)
-    inputs = data[idx]
-    targets = data[idx_t]
+    N = tokens_cpu.numel()
 
+    # 在 CPU 上生成 idx（也可以在GPU生成，这里保持在CPU）
+    starts = torch.randint(0, N - context_length, (batch_size,), device="cpu")
+    # 每条序列的位置偏移索引：
+    offsets = torch.arange(context_length, device="cpu")
+    idx = starts[:, None] + offsets[None, :]  # (B, m)
+
+    inputs = tokens_cpu[idx]
+    targets = tokens_cpu[idx + 1]
+
+    # 异步搬运到 GPU
+    inputs = inputs.to(device, non_blocking=True)
+    targets = targets.to(device, non_blocking=True)
+    
     return (inputs, targets)
 
 def save_checkpoint(model: torch.nn.Module, optimizer: torch.optim.Optimizer, iteration: int, out: str | os.PathLike | BinaryIO | IO[bytes]):
