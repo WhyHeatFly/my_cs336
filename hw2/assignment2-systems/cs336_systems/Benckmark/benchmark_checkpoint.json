@@ -1,0 +1,206 @@
+{
+  "reslut": [
+    {
+      "Size": "small",
+      "Mode": "forward",
+      "d_model": 768,
+      "d_ff": 3072,
+      "num_layers": 12,
+      "num_heads": 12,
+      "Context_length": 256,
+      "Avg Time (s)": 0.013145,
+      "Std Dev (s)": 0.000108,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "small",
+      "Mode": "forward_and_backward",
+      "d_model": 768,
+      "d_ff": 3072,
+      "num_layers": 12,
+      "num_heads": 12,
+      "Context_length": 256,
+      "Avg Time (s)": 0.043638,
+      "Std Dev (s)": 0.001201,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "medium",
+      "Mode": "forward",
+      "d_model": 1024,
+      "d_ff": 4096,
+      "num_layers": 24,
+      "num_heads": 16,
+      "Context_length": 256,
+      "Avg Time (s)": 0.027589,
+      "Std Dev (s)": 0.002537,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "medium",
+      "Mode": "forward_and_backward",
+      "d_model": 1024,
+      "d_ff": 4096,
+      "num_layers": 24,
+      "num_heads": 16,
+      "Context_length": 256,
+      "Avg Time (s)": 0.096616,
+      "Std Dev (s)": 0.005559,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "lagre",
+      "Mode": "forward",
+      "d_model": 1280,
+      "d_ff": 5120,
+      "num_layers": 36,
+      "num_heads": 20,
+      "Context_length": 256,
+      "Avg Time (s)": 0.041004,
+      "Std Dev (s)": 0.001884,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "lagre",
+      "Mode": "forward_and_backward",
+      "d_model": 1280,
+      "d_ff": 5120,
+      "num_layers": 36,
+      "num_heads": 20,
+      "Context_length": 256,
+      "Avg Time (s)": 0.16254,
+      "Std Dev (s)": 0.012549,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "xl",
+      "Mode": "forward",
+      "d_model": 1600,
+      "d_ff": 6400,
+      "num_layers": 48,
+      "num_heads": 25,
+      "Context_length": 256,
+      "Avg Time (s)": 0.060339,
+      "Std Dev (s)": 0.003017,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "xl",
+      "Mode": "forward_and_backward",
+      "d_model": 1600,
+      "d_ff": 6400,
+      "num_layers": 48,
+      "num_heads": 25,
+      "Context_length": 256,
+      "Avg Time (s)": 0.268257,
+      "Std Dev (s)": 0.029775,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "2.7B",
+      "Mode": "forward",
+      "d_model": 2560,
+      "d_ff": 10240,
+      "num_layers": 32,
+      "num_heads": 32,
+      "Context_length": 256,
+      "Avg Time (s)": 0.072765,
+      "Std Dev (s)": 0.001698,
+      "Warmup Steps": 5
+    },
+    {
+      "Size": "2.7B",
+      "Mode": "forward_and_backward",
+      "d_model": 2560,
+      "d_ff": 10240,
+      "num_layers": 32,
+      "num_heads": 32,
+      "Context_length": 256,
+      "Avg Time (s)": 0.386593,
+      "Std Dev (s)": 0.031662,
+      "Warmup Steps": 5
+    }
+  ],
+  "completed_tasks": [
+    {
+      "d_ff": 6400,
+      "d_model": 1600,
+      "mode": "forward_and_backward",
+      "num_heads": 25,
+      "num_layers": 48,
+      "size": "xl"
+    },
+    {
+      "d_ff": 6400,
+      "d_model": 1600,
+      "mode": "forward",
+      "num_heads": 25,
+      "num_layers": 48,
+      "size": "xl"
+    },
+    {
+      "d_ff": 10240,
+      "d_model": 2560,
+      "mode": "forward",
+      "num_heads": 32,
+      "num_layers": 32,
+      "size": "2.7B"
+    },
+    {
+      "d_ff": 5120,
+      "d_model": 1280,
+      "mode": "forward_and_backward",
+      "num_heads": 20,
+      "num_layers": 36,
+      "size": "lagre"
+    },
+    {
+      "d_ff": 4096,
+      "d_model": 1024,
+      "mode": "forward_and_backward",
+      "num_heads": 16,
+      "num_layers": 24,
+      "size": "medium"
+    },
+    {
+      "d_ff": 4096,
+      "d_model": 1024,
+      "mode": "forward",
+      "num_heads": 16,
+      "num_layers": 24,
+      "size": "medium"
+    },
+    {
+      "d_ff": 3072,
+      "d_model": 768,
+      "mode": "forward_and_backward",
+      "num_heads": 12,
+      "num_layers": 12,
+      "size": "small"
+    },
+    {
+      "d_ff": 5120,
+      "d_model": 1280,
+      "mode": "forward",
+      "num_heads": 20,
+      "num_layers": 36,
+      "size": "lagre"
+    },
+    {
+      "d_ff": 10240,
+      "d_model": 2560,
+      "mode": "forward_and_backward",
+      "num_heads": 32,
+      "num_layers": 32,
+      "size": "2.7B"
+    },
+    {
+      "d_ff": 3072,
+      "d_model": 768,
+      "mode": "forward",
+      "num_heads": 12,
+      "num_layers": 12,
+      "size": "small"
+    }
+  ]
+}
