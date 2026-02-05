@@ -12,6 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'cs336-basic
 
 from cs336_basics.model.modules import scaled_dot_product_attention
 
+
 batch_size = 8
 num_heads = 1
 d_models = [16, 32, 64, 128]
@@ -19,7 +20,7 @@ seq_lens = [256, 1024, 4096, 8192, 16384]
 loop = 100
 warm_up = 5
 
-# @torch.compile 不进行图优化和算子融合
+@torch.compile
 def pytorch_attention(d_model, seq_len, device):
     
     f_times, b_times = [], []
@@ -56,14 +57,22 @@ def pytorch_attention(d_model, seq_len, device):
 
         # backward process
         for _ in tqdm(range(loop), desc=f'[d={d_model}, seq={seq_len}] Backward', leave=False):
+           # 每次重新运行前向，以生成新的计算图
+            attn = scaled_dot_product_attention(Q, K, V)
             loss = attn.sum()
+            
             torch.cuda.synchronize()
             back_start = timeit.default_timer()
-            loss.backward(retain_graph=True)  # 保持图以便循环
+            
+            # 此时不需要 retain_graph=True
+            loss.backward() 
+            
             torch.cuda.synchronize()
             back_end = timeit.default_timer()
             b_times.append(back_end - back_start)
-            Q.grad, K.grad, V.grad = None, None, None
+            
+            # 必须清除梯度，否则会累加
+            Q.grad = K.grad = V.grad = None
         del Q, K, V
         torch.cuda.empty_cache()
     except torch.cuda.OutOfMemoryError:
@@ -90,7 +99,7 @@ def main():
             result = pytorch_attention(d_model, seq_len, device)
             res.append(result)
     res = pd.DataFrame(res)
-    with open('attn_benchmark_results.md', 'w') as f:
+    with open('attn_benchmark_compile_results.md', 'w') as f:
         f.write(res.to_markdown())
 
 if __name__ == "__main__":
