@@ -159,7 +159,75 @@ class FlashAttentionTriton(torch.autograd.Function):
         )
 
         ctx.save_for_backward(q, k, v, O_ptr, L_ptr)
-        ctx.i_causal = is_causal
+        ctx.is_causal = is_causal
 
         return O_ptr
     
+    @staticmethod
+    def backward(ctx, grad_out: torch.Tensor):
+        # 从ctx获取saved_tensors
+        q, k, v, O, L = ctx.saved_tensors
+        is_causal = ctx.is_causal
+        device = grad_out.device
+
+        # 初始化梯度
+        dQ = torch.zeros_like(q)
+        dK = torch.zeros_like(k)
+        dV = torch.zeros_like(v)
+
+        # 获取维度
+        batch_size, N_q, d_model = q.shape
+        _, N_k, _ = k.shape
+        scale = d_model**(-0.5)
+
+        @torch.compile
+        def flash_backward_impl(Q, K, V, O, L, dO, is_causal):
+            # Convert to float32 for computation
+            Q = Q.float()
+            K = K.float()
+            V = V.float()
+            dO = dO.float()
+
+            # 计算 D = rowsum(O * dO)
+            D = torch.sum(O * dO, dim=-1)  # (batch_size, N_q)
+
+            # 重新计算 S 和 P
+            S = torch.matmul(Q, K.transpose(-2, -1)) * scale  # (batch_size, N_q, N_k)
+
+            # Causal masking
+            if is_causal:
+                N_q = Q.shape[1]
+                N_k = K.shape[1]
+                q_indices = torch.arange(N_q, device=device)[:, None]
+                k_indices = torch.arange(N_k, device=device)[None, :]
+                mask = q_indices >= k_indices
+                S = torch.where(mask, S, torch.tensor(float('-inf'), device=device))
+            
+            # P = exp(S - L)
+            P = torch.exp(S - L.unsqueeze(-1))  # (batch_size, N_q, N_k)
+
+            # dV = P^T @ dO
+            dV = torch.matmul(P.transpose(-2, -1), dO)  # (batch_size, N_k, d_model)
+
+            # dP = dO @ V^T
+            dP = torch.matmul(dO, V.transpose(-2, -1))  # (batch_size, N_q, N_k)
+
+            # dS = P · (dP - D) / sqrt(d)
+            dS = P * (dP - D.unsqueeze(-1)) * scale  # (batch_size, N_q, N_k)
+
+            # dQ = dS @ K
+            dQ = torch.matmul(dS, K)  # (batch_size, N_q, d_model)
+
+            # dK = ds^T @ Q
+            dK = torch.matmul(dS.transpose(-2, -1), Q)  # (batch_size, N_k, d_model)
+
+            return dQ, dK, dV
+        
+        dQ, dK, dV = flash_backward_impl(q, k, v, O, L, grad_out, is_causal)
+
+        # Convert back to original dtype
+        dQ = dQ.to(q.dtype)
+        dK = dK.to(k.dtype)
+        dV = dV.to(v.dtype)
+
+        return dQ, dK, dV, None  # None for is_causal
