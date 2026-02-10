@@ -6,6 +6,7 @@ from typing import Any
 from cs336_data.extract_text import extract_text_from_html_bytes
 from cs336_data.language_identification import identify_language
 from cs336_data.Personally_Identifiable_Information import mask_emails, mask_ips, mask_phone_numbers
+from cs336_data.Hamful_content import classify_nsfw, classify_toxic_speech
 
 def run_extract_text_from_html_bytes(html_bytes: bytes) -> str | None:
     
@@ -33,11 +34,13 @@ def run_mask_ips(text: str) -> tuple[str, int]:
 
 
 def run_classify_nsfw(text: str) -> tuple[Any, float]:
-    raise NotImplementedError
+    
+    return classify_nsfw(text)
 
 
 def run_classify_toxic_speech(text: str) -> tuple[Any, float]:
-    raise NotImplementedError
+    
+    return classify_toxic_speech(text)
 
 
 def run_classify_quality(text: str) -> tuple[Any, float]:
