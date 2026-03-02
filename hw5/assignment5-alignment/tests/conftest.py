@@ -210,6 +210,7 @@ def output_strs():
 
 @pytest.fixture
 def model_id():
+    return r"C:\Users\why\WayHeatFly\cs336\hw5\model\Qwen2.5-Math-1.5B"
     return "/data/a5-alignment/models/Qwen2.5-Math-1.5B"
 
 
