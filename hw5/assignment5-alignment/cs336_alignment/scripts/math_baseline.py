@@ -162,14 +162,14 @@ def evaluate_vllm(
 def main():
     parser = argparse.ArgumentParser(description="Evaluate zero-shot MATH baseline")
     parser.add_argument("--model_path", type=str, 
-                        default=r"C:\Users\why\WayHeatFly\cs336\hw5\model\Qwen2.5-Math-1.5B",
+                        default="/root/autodl-tmp/hw5/assignment5-alignment/sft-model/sft-qwen2.5-lr-1e-05-bs-8-gc-16-sp-512",
                         help="Path to model")
     
     parser.add_argument("--data_path", type=str,
-                        default=r"C:\Users\why\WayHeatFly\cs336\hw5\assignment5-alignment\data\math\validation.jsonl",
+                        default=r"/root/autodl-tmp/hw5/assignment5-alignment/data/math/validation.jsonl",
                         help="Path to math dataset")
     parser.add_argument("--output_path", type=str, 
-                        default="results/math_baseline_results.json",
+                        default="results/sft_qw2.5-1e-05-8-16-512.json",
                         help="Path to save results")
     
     parser.add_argument("--temperature", type=float, default=1.0, help="Sample temperature")
