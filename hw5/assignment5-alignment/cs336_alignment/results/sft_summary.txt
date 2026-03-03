@@ -1,0 +1,96 @@
+  sft微调主要是让模型输出符合人类需求的格式，这里着重强调模型输出格式，但是准确率依旧是最关键的指标
+  Qwen2.5-1.5B基座模型baseline
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 134,
+    "correct_format_wrong_answer": 722,
+    "wrong_format": 4144,
+    "avg_total_reward": 0.0268,
+    "avg_format_reward": 0.1712,
+    "avg_answer_reward": 0.0268,
+    "accuracy": 0.0268
+  },
+
+问题：对于 LLM 的 SFT 微调，1e-3的学习率过高（行业常规是1e-5 ~ 5e-5）。
+影响：高学习率会让模型快速拟合训练数据的表层特征（比如格式），但无法稳定学习深层的答案逻辑，甚至会覆盖模型原本的数学推理能力，最终表现为 “格式学会了，答案学废了”。
+导致模型只学到了数据表征格式，但没有学习到深层的答案逻辑
+
+学习率：1e-3, batch_size: 4, gradient_accumulation_steps: 16, training_steps: 128
+"metric": {
+    "total_examples": 5000,
+    "correct_both": 92,
+    "correct_format_wrong_answer": 4840,
+    "wrong_format": 68,
+    "avg_total_reward": 0.0184,
+    "avg_format_reward": 0.9864,
+    "avg_answer_reward": 0.0184,
+    "accuracy": 0.0184
+  },
+
+ 
+
+学习率：1e-5, batch_size: 4, gradient_accumulation_steps: 16, training_steps: 128
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 748,
+    "correct_format_wrong_answer": 2906,
+    "wrong_format": 1346,
+    "avg_total_reward": 0.1496,
+    "avg_format_reward": 0.7308,
+    "avg_answer_reward": 0.1496,
+    "accuracy": 0.1496
+  },
+
+学习率：1e-5, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 128
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 792,
+    "correct_format_wrong_answer": 3059,
+    "wrong_format": 1149,
+    "avg_total_reward": 0.1584,
+    "avg_format_reward": 0.7702,
+    "avg_answer_reward": 0.1584,
+    "accuracy": 0.1584
+  },
+
+学习率：1e-5, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 256
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 946,
+    "correct_format_wrong_answer": 3360,
+    "wrong_format": 694,
+    "avg_total_reward": 0.1892,
+    "avg_format_reward": 0.8612,
+    "avg_answer_reward": 0.1892,
+    "accuracy": 0.1892
+  },
+
+学习率：1e-5, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 512
+    "metric": {
+    "total_examples": 5000,
+    "correct_both": 977,
+    "correct_format_wrong_answer": 3402,
+    "wrong_format": 621,
+    "avg_total_reward": 0.1954,
+    "avg_format_reward": 0.8758,
+    "avg_answer_reward": 0.1954,
+    "accuracy": 0.1954
+  },
+
+1. 学习率是 “核心变量”（1e-3 vs 1e-5）
+1e-3（过高）：模型只学格式、不学答案
+格式错误率仅 1.36%（格式奖励 0.9864），但答案正确率只有 1.84%；
+高学习率让模型快速拟合 “格式表层特征”，但覆盖了原本的数学推理能力，属于 “过拟合格式、欠拟合答案”。
+1e-5（合理）：模型能兼顾格式和答案
+答案正确率从 1.84% 直接飙升到 14.96%，说明模型终于能学习 “答案正确性”；
+格式奖励虽略有下降（0.9864→0.7308），但这是 “健康的下降”—— 模型不再为了格式牺牲答案。
+2. 增大 batch_size（4→8）的正向作用
+batch_size 从 4 升到 8（有效批次从 64→128），训练更稳定：
+correct_both 从 748→792（+44），答案正确率提升；
+wrong_format 从 1346→1149（-197），格式合规性也小幅回升；
+验证了 “更大有效批次能提升训练稳定性” 的结论。
+3. 增加 training_steps（128→512）的价值
+训练步数翻倍到 512 后，模型有足够时间学习 “格式 + 答案”：
+correct_both 从 792→977（+185），答案正确率持续提升；
+wrong_format 从 1149→694（-455），格式合规性也从 77.02%→87.58%；
+说明之前 128 步 “学不够”，512 步让模型既巩固了格式，又学会了答案逻辑。

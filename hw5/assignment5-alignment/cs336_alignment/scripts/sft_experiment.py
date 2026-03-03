@@ -337,6 +337,7 @@ def train_sft_experiment(
                 log_prob = log_prob_info['log_probs']
                 microbatch_loss, l_info = sft_microbatch_train_step(log_prob, response_mask, train_config.gradient_accumulation_steps)
             
+            # 广播 不同位次的loss求和
             loss += microbatch_loss
 
             # if arrives the accumulation steps we set, optimize it
