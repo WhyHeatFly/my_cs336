@@ -1,0 +1,144 @@
+ei(expert iteration)实验:
+1. 核心思想
+让模型自己生成候选方案，用自动化验证器筛选出 “正确 / 高质量” 的解（即 “专家级” 数据），再用这些筛选后的数据重新训练模型，循环往复，实现能力的自我提升。本质是 **“自举式” 学习（Bootstrapping）**，解决高质量标注数据稀缺、成本高的痛点。
+2. 标准流程（4 步闭环）
+生成（Generate）：用当前模型批量生成大量候选解答 / 策略（如数学题解法、代码、游戏走法）。
+验证（Verify）：通过自动化工具（如数学计算引擎、单元测试、环境模拟器）判断候选解的正确性 / 质量。
+筛选（Filter）：只保留正确、高质量的解，剔除错误或低质量结果（拒绝采样）。
+再训练（Retrain）：用筛选出的 “专家级” 数据对模型进行监督微调（SFT），更新模型参数。
+循环迭代：用更新后的模型回到第一步，开启下一轮，模型能力逐步逼近专家。
+
+lr: 5e-6, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 128, Db: 256, G_response: 8
+
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 969,
+    "correct_format_wrong_answer": 2225,
+    "wrong_format": 1806,
+    "avg_total_reward": 0.1938,
+    "avg_format_reward": 0.6388,
+    "avg_answer_reward": 0.1938,
+    "accuracy": 0.1938
+  },
+
+lr: 5e-6, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 128, Db: 512, G_response: 8
+
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 1131,
+    "correct_format_wrong_answer": 2552,
+    "wrong_format": 1317,
+    "avg_total_reward": 0.2262,
+    "avg_format_reward": 0.7366,
+    "avg_answer_reward": 0.2262,
+    "accuracy": 0.2262
+  },
+
+lr: 5e-6, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 128, Db: 512, G_response: 16
+
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 1226,
+    "correct_format_wrong_answer": 2485,
+    "wrong_format": 1289,
+    "avg_total_reward": 0.2452,
+    "avg_format_reward": 0.7422,
+    "avg_answer_reward": 0.2452,
+    "accuracy": 0.2452
+  },
+
+lr: 5e-6, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 128, Db: 1024, G_response: 8
+
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 1216,
+    "correct_format_wrong_answer": 2463,
+    "wrong_format": 1321,
+    "avg_total_reward": 0.2432,
+    "avg_format_reward": 0.7358,
+    "avg_answer_reward": 0.2432,
+    "accuracy": 0.2432
+  },
+
+lr: 5e-6, batch_size: 8, gradient_accumulation_steps: 16, training_steps: 128, Db: 1024, G_response: 16
+
+  "metric": {
+    "total_examples": 5000,
+    "correct_both": 1293,
+    "correct_format_wrong_answer": 2594,
+    "wrong_format": 1113,
+    "avg_total_reward": 0.2586,
+    "avg_format_reward": 0.7774,
+    "avg_answer_reward": 0.2586,
+    "accuracy": 0.2586
+  },
+
+二、Db 的影响（采样问题数）
+固定 G_response=8
+
+Db	accuracy
+256	 0.1938
+512	 0.2262
+1024 0.2432
+
+趋势：
+256 → 512   +3.2%
+512 → 1024  +1.7%
+
+说明：Db越大，expert data越多
+
+EI流程：
+
+sample questions (Db)
+→ generate answers (G)
+→ filter correct
+→ SFT
+
+Db大：
+更多问题
+→ 更多正确样本
+→ policy improvement更稳定
+
+但提升具有边际递减
+
+原因：dataset本身只有 ~7k题，模型能力有限
+所以：Db > 1024 收益可能更小
+
+三、G_response 的影响
+固定 Db=512
+
+G	accuracy
+8	0.2262
+16	0.2452
+提升：+1.9%
+
+固定 Db=1024
+
+G	accuracy
+8	0.2432
+16	0.2586
+提升：+1.54%
+
+原因：EI核心机制：多sample → 找到正确轨迹。G_response增加是EI最重要的因素
+
+四、Format 学习情况
+Db	G	format reward
+256	8	0.6388
+512	8	0.7366
+512	16	0.7422
+1024	8	0.7358
+1024	16	0.7774
+趋势：format reward 明显提升
+
+五、错误类型分析
+最好模型
+correct_both = 1293
+correct_format_wrong_answer = 2594
+wrong_format = 1113
+
+类型	       比例
+正确答案	    25.9%
+格式对答案错	 51.8%
+格式错	        22.2%
+
+说明：模型最大问题不是 format。而是：reasoning error
